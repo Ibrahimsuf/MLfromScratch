@@ -2,6 +2,8 @@ import sys
 import unittest
 from tensor import Tensor
 import numpy as np
+import torch
+import torch.nn.functional as F
 
 class TestTensor(unittest.TestCase):
     def test_tensor_creation(self):
@@ -95,7 +97,9 @@ class TestTensor(unittest.TestCase):
 
         b._backward()
         self.assertTrue(np.allclose(b.view(np.ndarray), np.array([[0.73105858, 0.88079708, 0.95257413], [0.01798621, 0.99330715, 0.99752738], [0.99908895, 0.00033535, 0.99987661]]), atol=1e-8))
-        self.assertTrue(np.allclose(a.gradients, b * (1 - b) * b.gradients, atol=1e-8))
+        
+        sigmoid_gradient = b.gradients * b.view(np.ndarray) * (1 - b.view(np.ndarray))
+        self.assertTrue(np.allclose(a.gradients, sigmoid_gradient, atol=1e-8))
 
     def test_sum(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
@@ -114,6 +118,33 @@ class TestTensor(unittest.TestCase):
         c._backward()
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 5, 5], [2, 2, 2], [7, 7, 7]])))
 
+    def test_backward(self):
+        # Create a tensor and set requires_grad=True to track computation with it
+        x = torch.tensor([1.0, -1.0, 2.0, -2.0], requires_grad=True)
+        y = torch.tensor([1.0, 1.0, 4.0, 1.0], requires_grad=True)
+        # Apply ReLU operation
+        relu_torch = F.relu(x + y)
+
+        # Apply sigmoid operation
+        sigmoid_torch = torch.sigmoid(relu_torch)
+
+        # Apply sum operation
+        s = torch.sum(sigmoid_torch, dim = 0, keepdim=True)
+
+        # Use backward to compute gradients
+        s.backward()
+
+        a = np.array([1.0, -1.0, 2.0, -2.0]).view(Tensor)
+        b= np.array([1.0, 1.0, 4.0, 1.0]).view(Tensor)
+
+        relu = (a + b).relu()
+        sigmoid_mine = relu.sigmoid()
+        sum_mine = sigmoid_mine.sum(keepdims=True)
+
+        sum_mine.backward()
+
+        self.assertTrue(np.allclose(a.gradients, x.grad, atol=1e-6))
+        self.assertTrue(np.allclose(b.gradients, y.grad, atol=1e-6))
 
 if __name__ == '__main__':
     unittest.main()

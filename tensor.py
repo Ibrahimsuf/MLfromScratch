@@ -15,6 +15,7 @@ class Tensor(np.ndarray):
         elif isinstance(obj, np.ndarray):
             self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
+            self.children = set()
     
     def __repr__(self) -> str:
         return super().__repr__() + '\n' + 'Gradients: ' + str(self.gradients)
@@ -38,6 +39,8 @@ class Tensor(np.ndarray):
     
     def __add__(self, other):
         out = super().__add__(other)
+        out.children.add(self)
+        out.children.add(other)
 
         def _backward():
             self.gradients += out.gradients
@@ -48,6 +51,8 @@ class Tensor(np.ndarray):
     
     def __mul__(self, other):
         out = super().__mul__(other)
+        out.children.add(self)
+        out.children.add(other)
 
         def _backward():
             self.gradients += out.gradients * other.view(np.ndarray)
@@ -58,6 +63,7 @@ class Tensor(np.ndarray):
     
     def relu(self) -> 'Tensor':
         out = np.maximum(self, 0)
+        out.children.add(self)
         def _backward():
             self.gradients += out.gradients * ((self > 0).view(np.ndarray).astype(self.dtype))
         
@@ -66,6 +72,7 @@ class Tensor(np.ndarray):
     
     def sigmoid(self) -> 'Tensor':
         out = 1 / (1 + np.exp(-self))
+        out.children.add(self)
         def _backward():
             self.gradients += out.gradients * out * (1 - out)
         
@@ -74,8 +81,31 @@ class Tensor(np.ndarray):
     
     def sum(self, axis=None, keepdims=False):
         out = super().sum(axis=axis, keepdims=keepdims)
+        out.children.add(self)
         def _backward():
             self.gradients += out.gradients * np.ones_like(self)
         
         out._backward = _backward
         return out
+
+
+    def backward(self):
+        # topological order all of the children in the graph
+        topo = []
+        visited = set()
+        def build_topo(v):
+            if v not in visited:
+                visited.add(v)
+                for child in v.children:
+                    build_topo(child)
+                topo.append(v)
+        build_topo(self)
+
+        # go one variable at a time and apply the chain rule to get its gradient
+        self.gradients = 1
+        for v in reversed(topo):
+            v._backward()
+
+    
+    def __hash__(self) -> int:
+        return id(self)
