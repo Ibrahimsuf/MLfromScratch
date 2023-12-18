@@ -13,7 +13,7 @@ class Tensor(np.ndarray):
             self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
         elif isinstance(obj, np.ndarray):
-            self.gradients = np.zeros(self.shape)
+            self.gradients = np.zeros(self.shape).astype(obj.dtype)
             self._backward = lambda: None
     
     def __repr__(self) -> str:
@@ -52,6 +52,14 @@ class Tensor(np.ndarray):
         def _backward():
             self.gradients += out.gradients * other.view(np.ndarray)
             other.gradients += out.gradients * self.view(np.ndarray)
+        
+        out._backward = _backward
+        return out
+    
+    def relu(self) -> 'Tensor':
+        out = np.maximum(self, 0)
+        def _backward():
+            self.gradients += out.gradients * ((self > 0).view(np.ndarray).astype(self.dtype))
         
         out._backward = _backward
         return out

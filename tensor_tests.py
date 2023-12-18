@@ -70,11 +70,20 @@ class TestTensor(unittest.TestCase):
 
         c._backward()
 
-        print(a.gradients)
-        print(c.gradients)
 
         self.assertTrue(np.array_equal(a.gradients, b.view(np.ndarray) * c.gradients))
         self.assertTrue(np.array_equal(b.gradients, a.view(np.ndarray) * c.gradients))
+    
+    def test_relu(self):
+        a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
+        a = a.view(Tensor)
+
+        b = a.relu()
+        b.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
+
+        b._backward()
+
+        self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [0, 0, 6], [8, 0, 6]])))
 
 
 if __name__ == '__main__':
