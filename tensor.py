@@ -71,3 +71,11 @@ class Tensor(np.ndarray):
         
         out._backward = _backward
         return out
+    
+    def sum(self, axis=None, keepdims=False):
+        out = super().sum(axis=axis, keepdims=keepdims)
+        def _backward():
+            self.gradients += out.gradients * np.ones_like(self)
+        
+        out._backward = _backward
+        return out
