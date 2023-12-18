@@ -13,7 +13,7 @@ class Tensor(np.ndarray):
             self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
         elif isinstance(obj, np.ndarray):
-            self.gradients = np.zeros(self.shape).astype(obj.dtype)
+            self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
     
     def __repr__(self) -> str:
@@ -60,6 +60,14 @@ class Tensor(np.ndarray):
         out = np.maximum(self, 0)
         def _backward():
             self.gradients += out.gradients * ((self > 0).view(np.ndarray).astype(self.dtype))
+        
+        out._backward = _backward
+        return out
+    
+    def sigmoid(self) -> 'Tensor':
+        out = 1 / (1 + np.exp(-self))
+        def _backward():
+            self.gradients += out.gradients * out * (1 - out)
         
         out._backward = _backward
         return out

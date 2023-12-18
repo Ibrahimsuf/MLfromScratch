@@ -85,6 +85,18 @@ class TestTensor(unittest.TestCase):
 
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [0, 0, 6], [8, 0, 6]])))
 
+    
+    def test_sigmoid(self):
+        a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
+        a = a.view(Tensor)
+
+        b = a.sigmoid()
+        b.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
+
+        b._backward()
+        self.assertTrue(np.allclose(b.view(np.ndarray), np.array([[0.73105858, 0.88079708, 0.95257413], [0.01798621, 0.99330715, 0.99752738], [0.99908895, 0.00033535, 0.99987661]]), atol=1e-8))
+        self.assertTrue(np.allclose(a.gradients, b * (1 - b) * b.gradients, atol=1e-8))
+
 
 if __name__ == '__main__':
     unittest.main()
