@@ -26,7 +26,7 @@ class TestLayers(unittest.TestCase):
         self.assertEqual(padded_image.shape, (1, 30, 30))
 
     def test_convolve_subsection(self):
-        subsection = np.array([[[1, 2, 3], [0, 0, 0], [0, 0, 0]]]).view(Tensor)
+        subsection = np.array([[[1, 2, 3], [0, 0, 0], [0, 0, 0]]]).reshape((1, 1, 3, 3)).view(Tensor)
         layer = ConvolutionalLayer(1, 2, 3, 1, 1)
 
         # Horizontal edge detector (Sobel filter)

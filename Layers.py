@@ -29,7 +29,7 @@ class ConvolutionalLayer():
 
 
     def convolve_subsection(self, subsection):
-        assert subsection.shape == (self.in_channels, self.size, self.size), f"Subsection shape must match filter shape {subsection.shape} != {(self.in_channels, self.size, self.size)}"
+        assert subsection.shape == (1, self.in_channels, self.size, self.size), f"Subsection shape must match filter shape {subsection.shape} != {(1, self.in_channels, self.size, self.size)}"
 
         #self.filters.shape = (out_channels, in_channels, size, size)
         # For each out channel we want to take the element wise product of the filter and the image (this includes going across multiple channels)
@@ -45,7 +45,10 @@ class ConvolutionalLayer():
         # print(f"Sum Shape: {sum.shape}")
         # print(f"OUT: {out}")
         # print(f"OUT SHAPE: {out.shape}")
-        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = False) + self.bias
+        
+        #We keep dims and then reshape instead of keepdims = False because it works better for computing the gradients in 2 steps.
+        #This is probaby suboptimal and should be changed
+        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = True).reshape(self.out_channels) + self.bias
         
     def add_padding(self, image):
         if self.padding == 0:

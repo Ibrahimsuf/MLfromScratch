@@ -171,5 +171,14 @@ class TestTensor(unittest.TestCase):
         self.assertTrue(np.allclose(a.gradients, x.grad, atol=1e-6))
         self.assertTrue(np.allclose(b.gradients, y.grad, atol=1e-6))
 
+    def test_reshape(self):
+        a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
+        a = a.view(Tensor)
+        b = a.reshape(1, 9)
+        self.assertTrue(np.array_equal(b.view(np.ndarray), np.array([[1, 2, 3, -4, 5, 6, 7, -8, 9]])))
+
+        b.gradients = np.array([[5, 2, 7, 7, 1, 0, 0, 4, 2]])
+        b._backward()
+        self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [7, 1, 0], [0, 4, 2]])))
 if __name__ == '__main__':
     unittest.main()
