@@ -87,7 +87,21 @@ class TestTensor(unittest.TestCase):
 
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [0, 0, 6], [8, 0, 6]])))
 
-    
+    def test_broadcasting(self):
+        a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]]).view(Tensor)
+        b = np.array([1, 2, 3]).view(Tensor) 
+
+        c = a + b
+        d = a * b
+
+        c.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
+        d.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
+
+        c._backward()
+        d._backward()
+
+        self.assertTrue(np.array_equal(a.gradients, np.array([[6, 5, 22], [3, 1, 19], [9, 13, 19]])))
+        self.assertTrue(np.array_equal(b.gradients, np.array([[57, -41, 104]])))   
     def test_sigmoid(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
         a = a.view(Tensor)
@@ -106,9 +120,10 @@ class TestTensor(unittest.TestCase):
         a = a.view(Tensor)
 
         b = a.sum(axis=0)
-        b.gradients = np.array([5, 2, 7])
+        b.gradients = np.array([[5, 2, 7]])
         b._backward()
 
+        # print(f"Gradients: {a.gradients}")
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [5, 2, 7], [5, 2, 7]])))
     def test_sum_keep_dims(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
@@ -139,7 +154,7 @@ class TestTensor(unittest.TestCase):
 
         relu = (a + b).relu()
         sigmoid_mine = relu.sigmoid()
-        sum_mine = sigmoid_mine.sum(keepdims=True)
+        sum_mine = sigmoid_mine.sum()
 
         sum_mine.backward()
 

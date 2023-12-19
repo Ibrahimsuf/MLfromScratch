@@ -1,4 +1,5 @@
 import numpy as np
+from tensor import Tensor
 
 class ConvolutionalLayer():
     def __init__(self, in_channels, out_chanels, size, stride, padding) -> None:
@@ -8,8 +9,8 @@ class ConvolutionalLayer():
         self.stride = stride
         self.padding = padding
 
-        self.filters = np.random.randn(self.out_channels, self.in_channels, size, size)
-        self.bias = np.random.randn(self.out_channels)
+        self.filters = np.random.randn(self.out_channels, self.in_channels, size, size).view(Tensor)
+        self.bias = np.random.randn(self.out_channels).view(Tensor)
     
     def __call__(self, image):
         padded_image = self.add_padding(image)
@@ -33,9 +34,9 @@ class ConvolutionalLayer():
         #self.filters.shape = (out_channels, in_channels, size, size)
         # For each out channel we want to take the element wise product of the filter and the image (this includes going across multiple channels)
         #then we want to sum accross the all the columns but the channel column
-        product = self.filters * subsection
-        sum = (product).sum(axis=(1,2, 3))
-        out = (product).sum(axis=(1,2, 3)) + self.bias
+        # product = self.filters * subsection
+        # sum = (product).sum(axis=(1,2, 3))
+        # out = (product).sum(axis=(1,2, 3)) + self.bias
 
         # print(f"Product: {product}")
         # print(f"Product Shape: {product.shape}")
@@ -44,7 +45,7 @@ class ConvolutionalLayer():
         # print(f"Sum Shape: {sum.shape}")
         # print(f"OUT: {out}")
         # print(f"OUT SHAPE: {out.shape}")
-        return out
+        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = False) + self.bias
         
     def add_padding(self, image):
         if self.padding == 0:
@@ -70,22 +71,3 @@ class Dense():
             return relu(self.weights @ input + self.bias)
         if self.activation == "softmax":
             return softmax(self.weights @ input + self.bias)    
-
-
-class Relu():
-    def __init__(self) -> None:
-        pass
-    
-    def __call__(self, x):
-        return self.forward(x)
-    
-    def forward(self, x):
-        self.x = x
-        return np.maximum(0, x)
-    
-    def backward(self):
-        return (self.x > 0) * 1
-
-def softmax(x):
-    # print(f"X: {x}")
-    return np.exp(x) / np.exp(x).sum()

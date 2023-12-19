@@ -55,6 +55,10 @@ class Tensor(np.ndarray):
         out.children.add(other)
 
         def _backward():
+            print(f"Self: {self.shape}")
+            print(f"Other: {other.shape}")
+            print(f"Out: {out.shape}")
+
             self.gradients += out.gradients * other.view(np.ndarray)
             other.gradients += out.gradients * self.view(np.ndarray)
         
@@ -79,11 +83,24 @@ class Tensor(np.ndarray):
         out._backward = _backward
         return out
     
-    def sum(self, axis=None, keepdims=False):
+    def sum(self, axis=None, keepdims=True):
         out = super().sum(axis=axis, keepdims=keepdims)
         out.children.add(self)
         def _backward():
-            self.gradients += out.gradients * np.ones_like(self)
+            # print(f"Ot gradients: {out.gradients}")
+            # print(f"Self shape: {self.shape}")
+            # print(f"Self gradients: {self.gradients}")
+            
+            #We need to take the transpose becuase numpy broadcasting starts from the last dimension and the channels out is the first dimension
+            #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
+
+            # print(f"Out gradients: {out.gradients}")
+            # print(f"Out gradients transpose: {out.gradients.T}")
+            # print(f"Ones like self: {np.ones_like(self)}")
+            # print(f"Ones like self transpose: {np.ones_like(self).T}")
+            # print(f"Out gradients transpose * ones like self transpose: {(out.gradients.T * np.ones_like(self).T)}")
+
+            self.gradients += (out.gradients.T * np.ones_like(self).T).T
         
         out._backward = _backward
         return out
@@ -102,7 +119,7 @@ class Tensor(np.ndarray):
         build_topo(self)
 
         # go one variable at a time and apply the chain rule to get its gradient
-        self.gradients = 1
+        self.gradients = np.ones_like(self)
         for v in reversed(topo):
             v._backward()
 
