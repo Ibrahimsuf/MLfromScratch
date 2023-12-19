@@ -89,7 +89,7 @@ class TestTensor(unittest.TestCase):
 
     def test_broadcasting(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]]).view(Tensor)
-        b = np.array([1, 2, 3]).view(Tensor) 
+        b = np.array([[1, 2, 3]]).view(Tensor) 
 
         c = a + b
         d = a * b
@@ -98,10 +98,20 @@ class TestTensor(unittest.TestCase):
         d.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
 
         c._backward()
+        # d._backward()
+
+        self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])))
+        self.assertTrue(np.array_equal(b.gradients, np.array([[15, 8, 19]]) ))
+
+
+        a.gradients = np.zeros(a.shape)
+        b.gradients = np.zeros(b.shape)
+
         d._backward()
 
-        self.assertTrue(np.array_equal(a.gradients, np.array([[6, 5, 22], [3, 1, 19], [9, 13, 19]])))
-        self.assertTrue(np.array_equal(b.gradients, np.array([[57, -41, 104]])))   
+        self.assertTrue(np.array_equal(a.gradients, np.array([[5, 4, 21], [2, 0, 18], [8, 12, 18]])))
+        self.assertTrue(np.array_equal(b.gradients, np.array([[53, -44, 111]])))
+
     def test_sigmoid(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
         a = a.view(Tensor)
@@ -119,7 +129,7 @@ class TestTensor(unittest.TestCase):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
         a = a.view(Tensor)
 
-        b = a.sum(axis=0)
+        b = a.sum(axis=0, keepdims=False)
         b.gradients = np.array([[5, 2, 7]])
         b._backward()
 
