@@ -64,17 +64,13 @@ class ConvolutionalLayer():
         return padded_image
 
 class Dense():
-    def __init__(self, in_features, out_features, activation="relu") -> None:
+    def __init__(self, in_features, out_features) -> None:
         self.in_features = in_features
         self.out_features = out_features
         self.weights = np.random.randn(self.out_features, self.in_features)
         self.bias = np.random.randn(self.out_features)
-        self.activation = activation
 
     def __call__(self, input):
-        assert input.shape == (self.in_features, ), f"Input shape must match in_features {input.shape} != {(self.in_features, )}"
+        assert input.shape == (self.in_features, 1), f"Input shape must match in_features {input.shape} != {(self.in_features, 1)}"
         
-        if self.activation == "relu":
-            return relu(self.weights @ input + self.bias)
-        if self.activation == "softmax":
-            return softmax(self.weights @ input + self.bias)    
+        return self.weights @ input + self.bias

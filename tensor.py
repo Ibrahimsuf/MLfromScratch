@@ -142,7 +142,20 @@ class Tensor(np.ndarray):
         for v in reversed(topo):
             v._backward()
 
-    
+    def __matmul__(self, other):
+        out = super().__matmul__(other)
+        out.children.add(self)
+        out.children.add(other)
+
+        def _backward():
+            self.gradients += out.gradients @ other.T
+            other.gradients += self.gradients.T @ out.gradients
+        
+        # we need to reshape these to be 2d arrays so the matrix multiplication works
+        # notes
+        out._backward = _backward
+        return out
+
     def __hash__(self) -> int:
         return id(self)
 

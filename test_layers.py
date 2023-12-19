@@ -59,6 +59,26 @@ class TestLayers(unittest.TestCase):
         self.assertTrue(np.array_equal(layer.filters.gradients, expected_gradient_filters))
         self.assertTrue(np.array_equal(layer.bias.gradients, expected_gradient_bias))
 
+    def test_dense(self):
+        dense = Dense(3, 2)
+        dense.weights = np.array([[1, 2, 3], [4, 5, 6]]).view(Tensor)
+        dense.bias = np.array([1, 2]).reshape(2, 1).view(Tensor)
+
+        input = np.array([1, 2, 3]).reshape(3, 1).view(Tensor)
+        output = dense(input)
+
+        expected_output = np.array([15, 34]).reshape(2,1).view(Tensor)
+        self.assertTrue(np.array_equal(output, expected_output))
+
+        output.backward()
+
+        expected_gradient_weights = np.array([[1, 2, 3], [1, 2, 3]])
+        expected_gradient_bias = np.array([1, 1]).reshape(2, 1)
+
+        self.assertTrue(np.array_equal(dense.weights.gradients, expected_gradient_weights)) 
+        self.assertTrue(np.array_equal(dense.bias.gradients, expected_gradient_bias))
+
+
 if __name__ == '__main__':
     unittest.main()
         
