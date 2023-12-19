@@ -12,7 +12,8 @@ def main():
     # plot_first_ten_images(X, train_labels)
     # test_convolve_image(X[0])
     # test_lecunnet(X[0])
-    test_find_loss()
+    test_convolve_image(X[5])
+   
 
 
 
@@ -59,9 +60,9 @@ def test_add_padding(image):
 def plot_image(image, image2, title1, title2):
     #plot padded image
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-    axes[0].imshow(image[0, :, :], cmap='gray')
+    axes[0].imshow(image, cmap='gray')
     axes[0].set_title(title1)
-    axes[1].imshow(image2[1, :, :], cmap='gray')
+    axes[1].imshow(image2, cmap='gray')
     axes[1].set_title(title2)
     plt.tight_layout()
     plt.show()
@@ -121,8 +122,9 @@ def test_convolve_image(image):
     layer.bias = np.zeros_like(layer.bias)
     
     output = layer(subsection)
-
-    plot_image(subsection, output, 'Subsection', 'Convolved Image')
+    print(output.shape) 
+    plot_image(subsection[0, :, :], output[0, :, :], 'Subsection', 'Convolved Image(Horizontal Edge Detector))')
+    plot_image(subsection[0, :, :], output[1, :, :], 'Subsection', 'Convolved Image(Vertical Edge Detector))')
 
 def test_find_loss():
     lecunnet = Lecunnet()

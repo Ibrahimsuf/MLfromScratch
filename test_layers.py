@@ -59,7 +59,6 @@ class TestLayers(unittest.TestCase):
         self.assertTrue(np.array_equal(layer.filters.gradients, expected_gradient_filters))
         self.assertTrue(np.array_equal(layer.bias.gradients, expected_gradient_bias))
 
-
 if __name__ == '__main__':
     unittest.main()
         
