@@ -176,11 +176,11 @@ class Tensor(np.ndarray):
         return out
 
     def cross_entropy(self, target):
-        out = -np.log(self[np.where(target == 1)])
+        out = -np.log(self[np.where(target == 1)] + 1e-8)
         out.children.add(self)
 
         def _backward():
-            self.gradients += out.gradients * (-target.view(np.ndarray) / self.view(np.ndarray))
+            self.gradients += out.gradients * (-target.view(np.ndarray) / (self.view(np.ndarray) + 1e-8))
 
         out._backward = _backward
         return out

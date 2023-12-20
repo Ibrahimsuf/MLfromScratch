@@ -8,20 +8,27 @@ from lecunnet import Lecunnet
 
 def main():
     X, train_labels = load_data()
+    train_labels = train_labels.astype(int)
     # print(train_labels[:10])
     # plot_first_ten_images(X, train_labels)
     # test_convolve_image(X[0])
     # test_lecunnet(X[0])
-    test_lecunnet(X[1])
+    test_lecunnet(X[1], train_labels[1])
    
 
 
 
-def test_lecunnet(image):
+def test_lecunnet(image, y_label):
     lecunnet = Lecunnet()
     output = lecunnet(image)
     print(f"Output: {output}")
     print(f"Output Shape: {output.shape}")
+
+    loss = output.cross_entropy(lecunnet.one_hot_encode(y_label))
+    print(f"Loss: {loss}")
+    loss.backward()
+
+    print(f"Conv1 Gradients: {lecunnet.conv1.filters.gradients}")
 
 def plot_first_ten_images(X, train_labels):
     # Plot the first ten images in the dataset
