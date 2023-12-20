@@ -159,6 +159,17 @@ class Tensor(np.ndarray):
     def __hash__(self) -> int:
         return id(self)
 
+
+    def softmax(self):
+        out = (np.exp(self.view(np.ndarray)) / np.sum(np.exp(self.view(np.ndarray)))).view(Tensor)
+        out.children.add(self)
+        def _backward():
+            out_ndarray = out.view(np.ndarray)
+            self.gradients += out.gradients @ (np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray))
+        
+        out._backward = _backward
+        return out
+
     @staticmethod
     def get_different_dimensions(arr1, arr2):
         # Ensure both arrays are numpy arrays

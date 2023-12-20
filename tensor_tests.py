@@ -180,5 +180,20 @@ class TestTensor(unittest.TestCase):
         b.gradients = np.array([[5, 2, 7, 7, 1, 0, 0, 4, 2]])
         b._backward()
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [7, 1, 0], [0, 4, 2]])))
+
+    def test_softmax(self):
+        a = np.array([5, -1, 2, -2]).view(Tensor)
+        b = a.softmax()
+
+        a_torch = torch.tensor([5.0, -1.0, 2.0, -2.0], requires_grad=True)
+        b_torch = torch.softmax(a_torch, dim=0)
+
+        self.assertTrue(np.allclose(b.view(np.ndarray), b_torch.detach().numpy(), atol=1e-6))
+
+        b.sum().backward()
+        b_torch.sum().backward()
+        self.assertTrue(np.allclose(a.gradients, a_torch.grad, atol=1e-6))
+
+
 if __name__ == '__main__':
     unittest.main()
