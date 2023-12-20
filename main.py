@@ -28,7 +28,7 @@ def test_lecunnet(image, y_label):
     print(f"Loss: {loss}")
     loss.backward()
 
-    print(f"Conv1 Gradients: {lecunnet.conv1.filters.gradients}")
+    # print(f"Dense 2 Gradients: {lecunnet.dense2.weights.gradients}")
 
 def plot_first_ten_images(X, train_labels):
     # Plot the first ten images in the dataset

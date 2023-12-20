@@ -169,12 +169,12 @@ class Tensor(np.ndarray):
         def _backward():
             out_ndarray = out.view(np.ndarray)
 
-            print(f"Out_ndarray.shape: {out_ndarray.shape}")
-            print(f"out.gradients.shape: {out.gradients.shape}")
-            print(f"self.gradients.shape: {self.gradients.shape}")
-            print(f"np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray): {(np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray)).shape}")
+            # print(f"Out_ndarray.shape: {out_ndarray.shape}")
+            # print(f"out.gradients.shape: {out.gradients.shape}")
+            # print(f"self.gradients.shape: {self.gradients.shape}")
+            # print(f"np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray): {(np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray)).shape}")
 
-            self.gradients += out.gradients.T @ (np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray))
+            self.gradients += (out.gradients.T @ (np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray))).T
         
         out._backward = _backward
 
@@ -193,6 +193,7 @@ class Tensor(np.ndarray):
             ##We need to take the transpose becuase numpy broadcasting starts from the last dimension and we want to start from the first dimension
             #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
             self.gradients += out.gradients * (-target.view(np.ndarray).T / (self.view(np.ndarray).T + 1e-8)).T
+            print(f"Self gradients: {self.gradients}")
 
         out._backward = _backward
         return out
