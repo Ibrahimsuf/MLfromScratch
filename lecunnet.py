@@ -36,7 +36,6 @@ class Lecunnet():
         # print("dense1 output: ", output)
         output = self.dense2(output)
         # print(f"Dense2 output: {output.shape}")
-        output = output.softmax()
         # print("dense2 output: ", output)
         return output
     

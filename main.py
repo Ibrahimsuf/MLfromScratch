@@ -27,6 +27,7 @@ def test_lecunnet(image, y_label):
     loss = output.cross_entropy(lecunnet.one_hot_encode(y_label))
     print(f"Loss: {loss}")
     loss.backward()
+    print(f"Conv1 Gradients: {lecunnet.conv1.filters.gradients}")
 
     # print(f"Dense 2 Gradients: {lecunnet.dense2.weights.gradients}")
 

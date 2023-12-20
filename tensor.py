@@ -165,7 +165,7 @@ class Tensor(np.ndarray):
         row_sum = np.sum(np.exp(self_scaled))
         softmax = np.exp(self_scaled) / row_sum
 
-        out = -np.log(softmax[np.where(target)]).view(Tensor)
+        out = -np.log(softmax[np.where(target)] + 1e-8).view(Tensor)
 
         # print(f"Out.shape: {out.shape}")
         # print(f"Target.shape: {target.shape}")
@@ -174,7 +174,10 @@ class Tensor(np.ndarray):
         def _backward():
             ##We need to take the transpose becuase numpy broadcasting starts from the last dimension and we want to start from the first dimension
             #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
-            self.gradients += out.gradients * (softmax - target)
+            # print(f"Out gradients: {out.gradients.shape}")
+            # print(f"Softmax: {softmax.shape}")
+            # print(f"Target: {target.shape}")
+            self.gradients += out.gradients * (softmax.T - target.T).T
 
         out._backward = _backward
         return out
