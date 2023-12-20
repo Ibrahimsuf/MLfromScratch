@@ -163,6 +163,7 @@ class Tensor(np.ndarray):
     def softmax(self):
         self_values = self.view(np.ndarray)
         self_values = self_values - np.max(self_values)
+        # print(f"Self values: {self_values}")
         out = (np.exp(self_values) / np.sum(np.exp(self_values))).view(Tensor)
         out.children.add(self)
         def _backward():
@@ -170,6 +171,8 @@ class Tensor(np.ndarray):
             self.gradients += out.gradients @ (np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray))
         
         out._backward = _backward
+
+        # print(f"Out: {out}")
         return out
 
     def cross_entropy(self, target):

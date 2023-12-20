@@ -18,19 +18,24 @@ class Lecunnet():
             image = image[np.newaxis, :, :]
 
         image = self.normalize_input(image)
+        # print(f"Image: {image}")
         # print("Image: ", image)
         output = self.conv1(image)
         output = output.relu()
+
+        # print(f"Conv1 output: {output}")
         # print("conv1 output: ", output)
         output = self.conv2(output)
         output = output.relu()
+        # print(f"Conv2 output: {output}")
         # print("conv2 output: ", output)
         output = output.reshape(-1, 1)
         output = self.dense1(output)
-        print(f"Dense1 output: {output.shape}")
+        # print(f"Dense1 output: {output.shape}")
         output = output.relu()
         # print("dense1 output: ", output)
         output = self.dense2(output)
+        # print(f"Dense2 output: {output.shape}")
         output = output.softmax()
         # print("dense2 output: ", output)
         return output
