@@ -159,31 +159,13 @@ class Tensor(np.ndarray):
     def __hash__(self) -> int:
         return id(self)
 
-
-    def softmax(self):
-        self_values = self.view(np.ndarray)
-        self_values = self_values - np.max(self_values)
-        # print(f"Self values: {self_values}")
-        out = (np.exp(self_values) / np.sum(np.exp(self_values))).view(Tensor)
-        out.children.add(self)
-        def _backward():
-            out_ndarray = out.view(np.ndarray)
-
-            # print(f"Out_ndarray.shape: {out_ndarray.shape}")
-            # print(f"out.gradients.shape: {out.gradients.shape}")
-            # print(f"self.gradients.shape: {self.gradients.shape}")
-            # print(f"np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray): {(np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray)).shape}")
-
-            self.gradients += (out.gradients.T @ (np.diag(out_ndarray) - np.outer(out_ndarray, out_ndarray))).T
-        
-        out._backward = _backward
-
-        # print(f"Out: {out}")
-        return out
-
     def cross_entropy(self, target):
-        out = -np.log(self[np.where(target == 1)] + 1e-8)
-        out.children.add(self)
+        """Returns the cross entropy loss between the target and the softmax of this tensor"""
+        self_scaled = self.view(np.ndarray) - np.max(self.view(np.ndarray))
+        row_sum = np.sum(np.exp(self_scaled))
+        softmax = np.exp(self_scaled) / row_sum
+
+        out = -np.log(softmax[np.where(target)]).view(Tensor)
 
         # print(f"Out.shape: {out.shape}")
         # print(f"Target.shape: {target.shape}")
@@ -192,8 +174,7 @@ class Tensor(np.ndarray):
         def _backward():
             ##We need to take the transpose becuase numpy broadcasting starts from the last dimension and we want to start from the first dimension
             #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
-            self.gradients += out.gradients * (-target.view(np.ndarray).T / (self.view(np.ndarray).T + 1e-8)).T
-            print(f"Self gradients: {self.gradients}")
+            self.gradients += out.gradients * (softmax - target)
 
         out._backward = _backward
         return out

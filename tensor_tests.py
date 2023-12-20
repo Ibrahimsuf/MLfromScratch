@@ -181,25 +181,11 @@ class TestTensor(unittest.TestCase):
         b._backward()
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [7, 1, 0], [0, 4, 2]])))
 
-    def test_softmax(self):
-        a = np.array([5, -1, 2, -2]).view(Tensor)
-        b = a.softmax()
-
-        a_torch = torch.tensor([5.0, -1.0, 2.0, -2.0], requires_grad=True)
-        b_torch = torch.softmax(a_torch, dim=0)
-
-        self.assertTrue(np.allclose(b.view(np.ndarray), b_torch.detach().numpy(), atol=1e-6))
-
-        b.sum().backward()
-        b_torch.sum().backward()
-        self.assertTrue(np.allclose(a.gradients, a_torch.grad, atol=1e-6))
-
     def test_cross_entropy(self):
         a = np.array([-5, 3, 7, 8]).view(Tensor)
         y = np.array([0, 1, 0, 0])
 
-        b = a.softmax()
-        loss = b.cross_entropy(y)
+        loss = a.cross_entropy(y)
 
         a_torch = torch.tensor([-5.0, 3.0, 7.0, 8.0], requires_grad=True)
         y_torch = torch.tensor([1])
@@ -216,7 +202,6 @@ class TestTensor(unittest.TestCase):
         loss_torch_value.backward()
 
         self.assertTrue(np.allclose(a.gradients, a_torch.grad, atol=1e-6))
-
 
 
         
