@@ -22,11 +22,11 @@ class ConvolutionalLayer():
 
         for i in range(0, padded_image.shape[2] - self.size, self.stride):
             for j in range(0, padded_image.shape[3] - self.size, self.stride):
-                print(f"i: {i}, j: {j}")
-                print(f"i+size: {i+self.size}, j+size: {j+self.size}")
+                # print(f"i: {i}, j: {j}")
+                # print(f"i+size: {i+self.size}, j+size: {j+self.size}")
                 image_section = padded_image[:, :, i:i+self.size, j:j+self.size]
 
-                print(f"Image Section: {image_section}")
+                # print(f"Image Section: {image_section}")
                 output[:, int(i/self.stride), int(j/self.stride)] = self.convolve_subsection(image_section)
         return output
 

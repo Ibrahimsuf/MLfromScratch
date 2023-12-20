@@ -138,7 +138,7 @@ class Tensor(np.ndarray):
         build_topo(self)
 
         # go one variable at a time and apply the chain rule to get its gradient
-        self.gradients = np.ones_like(self)
+        self.gradients = np.ones(self.shape)
         for v in reversed(topo):
             v._backward()
 
@@ -169,6 +169,17 @@ class Tensor(np.ndarray):
         
         out._backward = _backward
         return out
+
+    def cross_entropy(self, target):
+        out = -np.log(self[np.where(target == 1)])
+        out.children.add(self)
+
+        def _backward():
+            self.gradients += out.gradients * (-target.view(np.ndarray) / self.view(np.ndarray))
+
+        out._backward = _backward
+        return out
+
 
     @staticmethod
     def get_different_dimensions(arr1, arr2):

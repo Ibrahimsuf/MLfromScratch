@@ -12,7 +12,7 @@ def main():
     # plot_first_ten_images(X, train_labels)
     # test_convolve_image(X[0])
     # test_lecunnet(X[0])
-    test_convolve_image(X[5])
+    test_lecunnet(X[5])
    
 
 

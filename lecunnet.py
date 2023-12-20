@@ -8,7 +8,7 @@ class Lecunnet():
         self.conv1 = ConvolutionalLayer(1, 8, 5,  2, 0)
         self.conv2 = ConvolutionalLayer(8, 10, 5, 2, 0)
         self.dense1 = Dense(10*7*7, 30)
-        self.dense2 = Dense(30, 10, "softmax")
+        self.dense2 = Dense(30, 10)
         self.num_classes = 10
     
     def __call__(self, image):
@@ -19,13 +19,17 @@ class Lecunnet():
         image = self.normalize_input(image)
         # print("Image: ", image)
         output = self.conv1(image)
+        output = output.relu()
         # print("conv1 output: ", output)
         output = self.conv2(output)
+        output = output.relu()
         # print("conv2 output: ", output)
         output = output.reshape(-1)
         output = self.dense1(output)
+        output = output.relu()
         # print("dense1 output: ", output)
         output = self.dense2(output)
+        output = output.softmax()
         # print("dense2 output: ", output)
         return output
     

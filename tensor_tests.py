@@ -194,6 +194,30 @@ class TestTensor(unittest.TestCase):
         b_torch.sum().backward()
         self.assertTrue(np.allclose(a.gradients, a_torch.grad, atol=1e-6))
 
+    def test_cross_entropy(self):
+        a = np.array([-5, 3, 7, 8]).view(Tensor)
+        y = np.array([0, 1, 0, 0])
+
+        b = a.softmax()
+        loss = b.cross_entropy(y)
+
+        a_torch = torch.tensor([-5.0, 3.0, 7.0, 8.0], requires_grad=True)
+        y_torch = torch.tensor([1])
+
+        torch_loss = torch.nn.CrossEntropyLoss()
+        loss_torch_value = torch_loss(a_torch.view(1, -1), y_torch)
+
+        self.assertTrue(np.allclose(loss.view(np.ndarray), loss_torch_value.detach().numpy(), atol=1e-6))
+        
+        loss.backward()
+        loss_torch_value.backward()
+
+        self.assertTrue(np.allclose(a.gradients, a_torch.grad, atol=1e-6))
+
+
+
+        
+
 
 if __name__ == '__main__':
     unittest.main()
