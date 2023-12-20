@@ -28,7 +28,7 @@ class ConvolutionalLayer():
 
                 # print(f"Image Section: {image_section}")
                 output[:, int(i/self.stride), int(j/self.stride)] = self.convolve_subsection(image_section)
-        return output
+        return output.view(Tensor)
 
 
 
@@ -67,10 +67,18 @@ class Dense():
     def __init__(self, in_features, out_features) -> None:
         self.in_features = in_features
         self.out_features = out_features
-        self.weights = np.random.randn(self.out_features, self.in_features)
-        self.bias = np.random.randn(self.out_features)
+        self.weights = np.random.randn(self.out_features, self.in_features).view(Tensor)
+        self.bias = np.random.randn(self.out_features, 1).view(Tensor)
 
     def __call__(self, input):
         assert input.shape == (self.in_features, 1), f"Input shape must match in_features {input.shape} != {(self.in_features, 1)}"
         
+        # print(f"Weights: {self.weights.shape}")
+        # print(f"Input: {input.shape}")
+        # print(f"Bias: {self.bias.shape}")
+        # print(f"self.weights @ input: {(self.weights @ input).shape}")
+
+        # print(f"Product.shpae: {(self.weights @ input).shape}")
+        # print(f"Bias.shape: {self.bias.shape}")
+        # print(f"Sum.shape: {(self.weights @ input + self.bias).shape}")
         return self.weights @ input + self.bias

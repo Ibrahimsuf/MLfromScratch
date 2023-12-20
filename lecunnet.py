@@ -1,5 +1,6 @@
 from Layers import ConvolutionalLayer, Dense
 import numpy as np
+from tensor import Tensor 
 
 class Lecunnet():
     def __init__(self, input_shape = 28):
@@ -24,8 +25,9 @@ class Lecunnet():
         output = self.conv2(output)
         output = output.relu()
         # print("conv2 output: ", output)
-        output = output.reshape(-1)
+        output = output.reshape(-1, 1)
         output = self.dense1(output)
+        print(f"Dense1 output: {output.shape}")
         output = output.relu()
         # print("dense1 output: ", output)
         output = self.dense2(output)

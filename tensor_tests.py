@@ -207,6 +207,9 @@ class TestTensor(unittest.TestCase):
         torch_loss = torch.nn.CrossEntropyLoss()
         loss_torch_value = torch_loss(a_torch.view(1, -1), y_torch)
 
+
+        # print(f"My Loss: {loss}")
+        # print(f"Torch Loss: {loss_torch_value}")
         self.assertTrue(np.allclose(loss.view(np.ndarray), loss_torch_value.detach().numpy(), atol=1e-6))
         
         loss.backward()

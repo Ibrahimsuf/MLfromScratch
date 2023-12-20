@@ -161,7 +161,9 @@ class Tensor(np.ndarray):
 
 
     def softmax(self):
-        out = (np.exp(self.view(np.ndarray)) / np.sum(np.exp(self.view(np.ndarray)))).view(Tensor)
+        self_values = self.view(np.ndarray)
+        self_values = self_values - np.max(self_values)
+        out = (np.exp(self_values) / np.sum(np.exp(self_values))).view(Tensor)
         out.children.add(self)
         def _backward():
             out_ndarray = out.view(np.ndarray)
