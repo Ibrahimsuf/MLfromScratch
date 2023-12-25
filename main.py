@@ -4,6 +4,7 @@ import os
 import pickle
 from Layers import ConvolutionalLayer, Dense
 from lecunnet import Lecunnet
+from tensor import Tensor
 
 
 def main():
@@ -11,9 +12,10 @@ def main():
     train_labels = train_labels.astype(int)
     # print(train_labels[:10])
     # plot_first_ten_images(X, train_labels)
-    # test_convolve_image(X[0])
+    test_convolve_image(X[0])
     # test_lecunnet(X[0])
-    test_lecunnet(X[1], train_labels[1])
+    # test_convolve_subsection(X[0])
+    # test_lecunnet(X[1], train_labels[1])
    
 
 
@@ -21,15 +23,15 @@ def main():
 def test_lecunnet(image, y_label):
     lecunnet = Lecunnet()
     output = lecunnet(image)
-    print(f"Output: {output}")
-    print(f"Output Shape: {output.shape}")
+    # print(f"Output: {output}")
+    # print(f"Output Shape: {output.shape}")
 
     loss = output.cross_entropy(lecunnet.one_hot_encode(y_label))
     print(f"Loss: {loss}")
     loss.backward()
-    print(f"Conv1 Gradients: {lecunnet.conv1.filters.gradients}")
-
-    # print(f"Dense 2 Gradients: {lecunnet.dense2.weights.gradients}")
+    # print(f"Dense Gradients: {lecunnet.conv1.filters}")
+    # print(f"Dense2 gradients: {lecunnet.dense2.weights.gradients}")
+    # print(f"Conv2 Gradient Shape: {lecunnet.conv2.filters.gradients}")
 
 def plot_first_ten_images(X, train_labels):
     # Plot the first ten images in the dataset
@@ -76,7 +78,7 @@ def plot_image(image, image2, title1, title2):
     plt.show()
 
 def test_convolve_subsection(image):
-    subsection = image[15:18, 15:18].reshape(1, 3, 3)
+    subsection = image[15:18, 15:18].reshape(1, 1, 3, 3).view(Tensor)
     layer = ConvolutionalLayer(1, 2, 3, 1, 1)
 
     # Horizontal edge detector (Sobel filter)
@@ -90,13 +92,13 @@ def test_convolve_subsection(image):
                                     [-1, 0, 1]])
 # Combine the filters into a single array
     layer.filters = np.stack([horizontal_edge_detector, vertical_edge_detector])
-    layer.filters = layer.filters[:, np.newaxis, :, :]
+    layer.filters = layer.filters[:, np.newaxis, :, :].view(Tensor)
     # layer.filters = layer.filters.reshape(2, 1, 3, 3)
 
     layer.bias = np.zeros_like(layer.bias)
     
     output = layer.convolve_subsection(subsection)
-    # print(f'Output Shape: {output.shape}')
+    print(f'Output Shape: {output.shape}')
     # print(f'Output: {output}')
     # print(f"Subsection: {subsection}")
     # print(f"Filters: {layer.filters[0, 0, :, :]}")
@@ -104,7 +106,11 @@ def test_convolve_subsection(image):
     # print(f'Filter Shape: {layer.filters.shape}')
     # print(f"Subsection Shape: {subsection.shape}")
 
-    plot_image(subsection, layer.filters[0, :, :, :], 'Subsection', 'Filter')
+    plot_image(subsection[0,0,:,:], layer.filters[0, 0, :, :], 'Subsection', 'Filter')
+    output.backward()
+
+    # print(f"Subsection Gradients: {subsection.gradients}")
+    print(f"Filter Gradients: {layer.filters.gradients}")
 
     # print(f'Output Shape: {output.shape}')
     # print(f'Output: {output}')
@@ -124,7 +130,7 @@ def test_convolve_image(image):
                                     [-1, 0, 1]])
 # Combine the filters into a single array
     layer.filters = np.stack([horizontal_edge_detector, vertical_edge_detector])
-    layer.filters = layer.filters[:, np.newaxis, :, :]
+    layer.filters = layer.filters[:, np.newaxis, :, :].view(Tensor)
     # layer.filters = layer.filters.reshape(2, 1, 3, 3)
 
     layer.bias = np.zeros_like(layer.bias)
@@ -133,6 +139,9 @@ def test_convolve_image(image):
     print(output.shape) 
     plot_image(subsection[0, :, :], output[0, :, :], 'Subsection', 'Convolved Image(Horizontal Edge Detector))')
     plot_image(subsection[0, :, :], output[1, :, :], 'Subsection', 'Convolved Image(Vertical Edge Detector))')
+
+    output.backward()
+    print(output.children)
 
 def test_find_loss():
     lecunnet = Lecunnet()

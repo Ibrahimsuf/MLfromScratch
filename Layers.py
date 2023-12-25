@@ -16,7 +16,7 @@ class ConvolutionalLayer():
         padded_image = self.add_padding(image)
         # Add new axis to the front of the image to represent the out channels
         padded_image = padded_image[np.newaxis, :, :, :].view(Tensor)
-        output = np.zeros((self.out_channels, int(padded_image.shape[2]/self.stride), int(padded_image.shape[3]/self.stride)))
+        output = np.zeros((self.out_channels, int(padded_image.shape[2]/self.stride), int(padded_image.shape[3]/self.stride))).view(Tensor)
         # print(f"Output Shape: {output.shape}")
         # print(f"End of range: {padded_image.shape[1] - self.size}")
 
@@ -28,7 +28,7 @@ class ConvolutionalLayer():
 
                 # print(f"Image Section: {image_section}")
                 output[:, int(i/self.stride), int(j/self.stride)] = self.convolve_subsection(image_section)
-        return output.view(Tensor)
+        return output
 
 
 

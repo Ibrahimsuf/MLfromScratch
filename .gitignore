@@ -1,2 +1,8 @@
 *.pkl
 *.csv
+*-ubyte
+*ipynb_checkpoints
+*.ipynb
+*.conda
+*__pycache__
+*.pyc

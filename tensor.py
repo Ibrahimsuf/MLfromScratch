@@ -18,7 +18,7 @@ class Tensor(np.ndarray):
             self.children = set()
     
     def __repr__(self) -> str:
-        return super().__repr__() + '\n' + 'Gradients: ' + str(self.gradients)
+        return "Values " + super().__repr__() + '\n' + 'Gradients: ' + str(self.gradients)
     
     def __str__(self) -> str:
         return super().__str__() + '\n' + 'Gradients: ' + str(self.gradients)
@@ -33,7 +33,7 @@ class Tensor(np.ndarray):
 
     def __setitem__(self, index, value):
         if isinstance(value, Tensor):
-            self.gradients[index] = value.gradients if value.gradients else np.zeros(value.shape)
+            self.gradients[index] = value.gradients if value.gradients is not None else np.zeros(value.shape)
         super().__setitem__(index, value)
 
     
@@ -119,13 +119,17 @@ class Tensor(np.ndarray):
     def reshape(self, *shape):
         out = super().reshape(*shape)
         out.children.add(self)
+
+
         def _backward():
             self.gradients += out.gradients.reshape(self.shape)
+            # print(f"Self gradients: {self.gradients}")
         
         out._backward = _backward
         return out
 
     def backward(self):
+        # print(f'In backward with self: {self}')
         # topological order all of the children in the graph
         topo = []
         visited = set()
@@ -139,8 +143,10 @@ class Tensor(np.ndarray):
 
         # go one variable at a time and apply the chain rule to get its gradient
         self.gradients = np.ones(self.shape)
+        # print(f"Topo: {topo}")
         for v in reversed(topo):
             v._backward()
+            # print(v)
 
     def __matmul__(self, other):
         out = super().__matmul__(other)
@@ -170,7 +176,7 @@ class Tensor(np.ndarray):
         # print(f"Out.shape: {out.shape}")
         # print(f"Target.shape: {target.shape}")
         # print(f"Self.shape: {self.shape}")
-
+        out.children.add(self)
         def _backward():
             ##We need to take the transpose becuase numpy broadcasting starts from the last dimension and we want to start from the first dimension
             #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
@@ -178,10 +184,12 @@ class Tensor(np.ndarray):
             # print(f"Softmax: {softmax.shape}")
             # print(f"Target: {target.shape}")
             self.gradients += out.gradients * (softmax.T - target.T).T
-
         out._backward = _backward
         return out
 
+    def convolve(self, other, stride=1):
+        pass
+        
 
     @staticmethod
     def get_different_dimensions(arr1, arr2):
@@ -199,4 +207,8 @@ class Tensor(np.ndarray):
         arr2_missing = [i for i in range(min_len) if shape2[i] < shape1[i]]
         return tuple(arr1_missing), tuple(arr2_missing)
 
+    @staticmethod
+    def image2col(image, stride, filter_size):
+        """Converts an image to a column matrix"""
+        
 
