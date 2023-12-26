@@ -188,6 +188,9 @@ class Tensor(np.ndarray):
 
     def convolve(self, other, stride=1):
         pass
+
+    def zero_grad(self):
+        self.gradients = np.zeros(self.shape)
         
 
     @staticmethod

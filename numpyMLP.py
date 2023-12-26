@@ -20,3 +20,6 @@ class NeuralNetworkNumpy:
         out = out.relu()
         out = self.layer3(out)
         return out
+    
+    def parameters(self):
+        return (self.weights, self.biases)
