@@ -63,15 +63,15 @@ class ConvolutionalLayer():
         padded_image[:, self.padding:-self.padding, self.padding:-self.padding] = image
         return padded_image
 
-class Dense():
+class Linear():
     def __init__(self, in_features, out_features) -> None:
         self.in_features = in_features
         self.out_features = out_features
-        self.weights = np.random.randn(self.out_features, self.in_features).view(Tensor)
-        self.bias = np.random.randn(self.out_features, 1).view(Tensor)
+        self.weights = np.random.randn(self.in_features, self.out_features).view(Tensor) / np.sqrt(self.in_features)
+        self.bias = np.zeros(self.out_features).view(Tensor)
 
     def __call__(self, input):
-        assert input.shape == (self.in_features, 1), f"Input shape must match in_features {input.shape} != {(self.in_features, 1)}"
+        assert input.shape[1] == self.in_features, f"Input shape must match in_features {input.shape} != {(self.in_features, 1)}"
         
         # print(f"Weights: {self.weights.shape}")
         # print(f"Input: {input.shape}")
@@ -81,4 +81,4 @@ class Dense():
         # print(f"Product.shpae: {(self.weights @ input).shape}")
         # print(f"Bias.shape: {self.bias.shape}")
         # print(f"Sum.shape: {(self.weights @ input + self.bias).shape}")
-        return self.weights @ input + self.bias
+        return input @ self.weights + self.bias

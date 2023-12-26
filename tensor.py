@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import zip_longest
 
 class Tensor(np.ndarray):
     def __new__(cls, *args, **kwargs):
@@ -12,6 +13,7 @@ class Tensor(np.ndarray):
         if obj is None:
             self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
+            self.children = set()
         elif isinstance(obj, np.ndarray):
             self.gradients = np.zeros(self.shape)
             self._backward = lambda: None
@@ -38,14 +40,23 @@ class Tensor(np.ndarray):
 
     
     def __add__(self, other):
+        # We may be adding a (32, 10) tensor to a (10, ) tensor so the 10 broadcasts 32 times
+        # We need to make sure that the gradients are added correctly
         out = super().__add__(other)
         out.children.add(self)
         out.children.add(other)
 
         def _backward():
                 self_missing, other_missing = Tensor.get_different_dimensions(self.gradients, other.gradients)
-                self.gradients += out.gradients.sum(axis=self_missing, keepdims=True)
-                other.gradients += out.gradients.sum(axis=other_missing, keepdims=True)
+                
+                # print(f"Self gradients: {self.gradients.shape}")
+                # print(f"Other gradients: {other.gradients.shape}")
+
+                # print(f"Self missing: {self_missing}")
+                # print(f"Other missing: {other_missing}")
+                
+                self.gradients += out.gradients.sum(axis=self_missing, keepdims=False)
+                other.gradients += out.gradients.sum(axis=other_missing, keepdims=False)
 
             # if self is broadcasted to be the same shape as other
             #if self.gradients has dims (1, 3) and out.gradients has dims (3, 3) we want to sum the gradients on axis 0
@@ -111,7 +122,7 @@ class Tensor(np.ndarray):
             # print(f"Ones like self transpose: {np.ones_like(self).T}")
             # print(f"Out gradients transpose * ones like self transpose: {(out.gradients.T * np.ones_like(self).T)}")
 
-            self.gradients += (out.gradients.T * np.ones_like(self).T).T
+            self.gradients += (out.gradients.T * np.ones_like(self).view(np.ndarray).T).T
         
         out._backward = _backward
         return out
@@ -154,11 +165,8 @@ class Tensor(np.ndarray):
         out.children.add(other)
 
         def _backward():
-            self.gradients += out.gradients @ other.T
-            other.gradients += self.gradients.T @ out.gradients
-        
-        # we need to reshape these to be 2d arrays so the matrix multiplication works
-        # notes
+            self.gradients += out.gradients @ other.T.view(np.ndarray)
+            other.gradients += self.T.view(np.ndarray) @ out.gradients
         out._backward = _backward
         return out
 
@@ -167,23 +175,14 @@ class Tensor(np.ndarray):
 
     def cross_entropy(self, target):
         """Returns the cross entropy loss between the target and the softmax of this tensor"""
-        self_scaled = self.view(np.ndarray) - np.max(self.view(np.ndarray))
-        row_sum = np.sum(np.exp(self_scaled))
-        softmax = np.exp(self_scaled) / row_sum
-
-        out = -np.log(softmax[np.where(target)] + 1e-8).view(Tensor)
-
-        # print(f"Out.shape: {out.shape}")
-        # print(f"Target.shape: {target.shape}")
-        # print(f"Self.shape: {self.shape}")
+        logits = self.view(np.ndarray) - np.max(self.view(np.ndarray), axis=1, keepdims=True)
+        probs = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+        out =  (-np.sum(target * np.log(probs + 1e-8)) / target.shape[0])
+        out = out.reshape(1).view(Tensor)
         out.children.add(self)
         def _backward():
-            ##We need to take the transpose becuase numpy broadcasting starts from the last dimension and we want to start from the first dimension
-            #https://stackoverflow.com/questions/22603375/numpy-broadcast-from-first-dimension
-            # print(f"Out gradients: {out.gradients.shape}")
-            # print(f"Softmax: {softmax.shape}")
-            # print(f"Target: {target.shape}")
-            self.gradients += out.gradients * (softmax.T - target.T).T
+            self.gradients += out.gradients * (probs - target) / probs.shape[0]
+
         out._backward = _backward
         return out
 
@@ -193,19 +192,21 @@ class Tensor(np.ndarray):
 
     @staticmethod
     def get_different_dimensions(arr1, arr2):
-        # Ensure both arrays are numpy arrays
-        arr1, arr2 = np.asarray(arr1), np.asarray(arr2)
+        axis = max(arr1.ndim, arr2.ndim) - 1
+        arr_1_missing = []
+        arr_2_missing = []
+        for arr1_dim, arr2_dim in zip_longest(arr1.shape[::-1], arr2.shape[::-1]):
+            if arr1_dim != arr2_dim:
+                if not arr1_dim or arr1_dim == 1:
+                    arr_1_missing.append(axis)
+                if not arr2_dim or arr2_dim == 1:
+                    arr_2_missing.append(axis)
+            axis -= 1
+        
+        # print(f"Arr 1 missing: {arr_1_missing}")
+        # print(f"Arr 2 missing: {arr_2_missing}")
 
-        # Get the shapes of the arrays
-        shape1, shape2 = arr1.shape, arr2.shape
-
-        # Find the minimum length of the shapes
-        min_len = min(len(shape1), len(shape2))
-
-        # Compare the dimensions of the arrays up to the minimum length
-        arr1_missing = [i for i in range(min_len) if shape1[i] < shape2[i]]
-        arr2_missing = [i for i in range(min_len) if shape2[i] < shape1[i]]
-        return tuple(arr1_missing), tuple(arr2_missing)
+        return tuple(arr_1_missing), tuple(arr_2_missing)
 
     @staticmethod
     def image2col(image, stride, filter_size):

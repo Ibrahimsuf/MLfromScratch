@@ -112,6 +112,17 @@ class TestTensor(unittest.TestCase):
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 4, 21], [2, 0, 18], [8, 12, 18]])))
         self.assertTrue(np.array_equal(b.gradients, np.array([[53, -44, 111]])))
 
+        x = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]]).view(Tensor)
+        y = np.array([1, 2, 3]).view(Tensor)
+
+        z = x + y
+        z.gradients = np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])
+
+        z._backward()
+
+        self.assertTrue(np.array_equal(x.gradients, np.array([[5, 2, 7], [2, 0, 6], [8, 6, 6]])))
+        self.assertTrue(np.array_equal(y.gradients, np.array([15, 8, 19])))
+
     def test_sigmoid(self):
         a = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]])
         a = a.view(Tensor)
@@ -182,8 +193,8 @@ class TestTensor(unittest.TestCase):
         self.assertTrue(np.array_equal(a.gradients, np.array([[5, 2, 7], [7, 1, 0], [0, 4, 2]])))
 
     def test_cross_entropy(self):
-        a = np.array([-5, 3, 7, 8]).view(Tensor)
-        y = np.array([0, 1, 0, 0])
+        a = np.array([[-5, 3, 7, 8]]).view(Tensor)
+        y = np.array([[0, 1, 0, 0]])
 
         loss = a.cross_entropy(y)
 

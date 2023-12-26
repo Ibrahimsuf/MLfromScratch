@@ -1,5 +1,5 @@
 import unittest
-from Layers import Dense, ConvolutionalLayer
+from Layers import Linear, ConvolutionalLayer
 from dataloader import DataLoader
 import numpy as np
 from tensor import Tensor
@@ -59,8 +59,8 @@ class TestLayers(unittest.TestCase):
         self.assertTrue(np.array_equal(layer.filters.gradients, expected_gradient_filters))
         self.assertTrue(np.array_equal(layer.bias.gradients, expected_gradient_bias))
 
-    def test_dense(self):
-        dense = Dense(3, 2)
+    def test_linear(self):
+        dense = Linear(3, 2)
         dense.weights = np.array([[1, 2, 3], [4, 5, 6]]).view(Tensor)
         dense.bias = np.array([1, 2]).reshape(2, 1).view(Tensor)
 
