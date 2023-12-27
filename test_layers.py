@@ -1,5 +1,5 @@
 import unittest
-from Layers import Linear, ConvolutionalLayer
+from Layers import Linear, ConvolutionalLayer, MaxPooling
 from dataloader import DataLoader
 import numpy as np
 from tensor import Tensor
@@ -59,25 +59,38 @@ class TestLayers(unittest.TestCase):
         self.assertTrue(np.array_equal(layer.filters.gradients, expected_gradient_filters))
         self.assertTrue(np.array_equal(layer.bias.gradients, expected_gradient_bias))
 
-    def test_linear(self):
-        dense = Linear(3, 2)
-        dense.weights = np.array([[1, 2, 3], [4, 5, 6]]).view(Tensor)
-        dense.bias = np.array([1, 2]).reshape(2, 1).view(Tensor)
+    def test_max_pool(self):
+        #testing with 1 filter
+        image = np.array([[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10 ,11, 12], [13, 14, 15, 16]]]).reshape(1, 4, 4).view(Tensor)
+        layer = MaxPooling(2, 2)
+        output = layer(image)
 
-        input = np.array([1, 2, 3]).reshape(3, 1).view(Tensor)
-        output = dense(input)
-
-        expected_output = np.array([15, 34]).reshape(2,1).view(Tensor)
+        expected_output = np.array([[[6, 8], [14, 16]]]).view(Tensor)
+        # print(f"Output: {output}")
         self.assertTrue(np.array_equal(output, expected_output))
 
-        output.backward()
+        output.gradients = np.array([[[1, 2], [3, 4]]]).view(Tensor)
+        output._backward()
+        expected_gradient = np.array([[[0, 0, 0, 0], [0, 1, 0, 2], [0, 0, 0, 0], [0, 3, 0, 4]]]).view(Tensor)
 
-        expected_gradient_weights = np.array([[1, 2, 3], [1, 2, 3]])
-        expected_gradient_bias = np.array([1, 1]).reshape(2, 1)
+        # print(f"Image gradients: {image.gradients}")
+        self.assertTrue(np.array_equal(image.gradients, expected_gradient))
 
-        self.assertTrue(np.array_equal(dense.weights.gradients, expected_gradient_weights)) 
-        self.assertTrue(np.array_equal(dense.bias.gradients, expected_gradient_bias))
 
+        #testing with 2 filters
+        image = np.array([[[1 ,2], [3, 4]], [[5, 6], [7, 8]]]).reshape(2, 2, 2).view(Tensor)
+        layer = MaxPooling(2, 2)
+        output = layer(image)
+
+        expected_output = np.array([[[4, 8]]]).view(Tensor)
+
+        output.gradients = np.array([[[1]], [[2]]]).view(Tensor)
+        output._backward()
+        expected_gradient = np.array([[[0, 0], [0, 1]], [[0, 0], [0, 2]]]).view(Tensor)
+
+        # print(f"Image gradients: {image.gradients}")
+
+        self.assertTrue(np.array_equal(image.gradients, expected_gradient))
 
 if __name__ == '__main__':
     unittest.main()

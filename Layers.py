@@ -33,7 +33,7 @@ class ConvolutionalLayer():
 
 
     def convolve_subsection(self, subsection):
-        assert subsection.shape == (1, self.in_channels, self.size, self.size), f"Subsection shape must match filter shape {subsection.shape} != {(1, self.in_channels, self.size, self.size)}"
+        assert subsection.shape == (self.in_channels, self.size, self.size), f"Subsection shape must match filter shape {subsection.shape} != {(self.in_channels, self.size, self.size)}"
 
         #self.filters.shape = (out_channels, in_channels, size, size)
         # For each out channel we want to take the element wise product of the filter and the image (this includes going across multiple channels)
@@ -50,9 +50,7 @@ class ConvolutionalLayer():
         # print(f"OUT: {out}")
         # print(f"OUT SHAPE: {out.shape}")
         
-        #We keep dims and then reshape instead of keepdims = False because it works better for computing the gradients in 2 steps.
-        #This is probaby suboptimal and should be changed
-        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = True).reshape(self.out_channels) + self.bias
+        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = False) + self.bias
         
     def add_padding(self, image):
         if self.padding == 0:
@@ -71,7 +69,7 @@ class Linear():
         self.bias = np.zeros(self.out_features).view(Tensor)
 
     def __call__(self, input):
-        assert input.shape[1] == self.in_features, f"Input shape must match in_features {input.shape} != {(self.in_features, 1)}"
+        assert input.shape[1] == self.in_features, f"Input shape must match in_features {input.shape[1]} != {self.in_features}"
         
         # print(f"Weights: {self.weights.shape}")
         # print(f"Input: {input.shape}")
@@ -82,3 +80,41 @@ class Linear():
         # print(f"Bias.shape: {self.bias.shape}")
         # print(f"Sum.shape: {(self.weights @ input + self.bias).shape}")
         return input @ self.weights + self.bias
+
+
+
+class MaxPooling():
+    def __init__(self, size, stride) -> None:
+        self.size = size
+        self.stride = stride
+
+    def __call__(self, image):
+        output = np.zeros((image.shape[0], int(image.shape[1]/self.stride), int(image.shape[2]/self.stride)))
+        self.max_indices = np.zeros((image.shape[0], int(image.shape[1]/self.stride), int(image.shape[2]/self.stride), 2))
+        for i in range(0, image.shape[1], self.stride):
+            for j in range(0, image.shape[2], self.stride):
+                image_section = image[:, i:i+self.size, j:j+self.size]
+
+                max_idx = image_section.reshape(image_section.shape[0],-1).argmax(1)
+                maxpos_vect = np.column_stack(np.unravel_index(max_idx, image_section[0,:,:].shape))
+                maxpos_vect += np.array([i, j])
+                # print(f"Max Pos Vect: {maxpos_vect}")
+                # print(f"Max_idx: {max_idx}")
+
+                self.max_indices[:, int(i/self.stride), int(j/self.stride), :] = maxpos_vect
+                output[:, int(i/self.stride), int(j/self.stride)] = image_section.max(axis=(1,2))
+
+        output = output.view(Tensor)
+
+        def _backward():
+            print(f"Output gradients: {output.gradients.shape}")
+            print(f"Max indices: {self.max_indices.shape}")
+            for i in range(0, self.max_indices.shape[1]):
+                for j in range(0, self.max_indices.shape[2]):
+                    for k in range(0, self.max_indices.shape[0]):
+                        max_index_x, max_index_y = self.max_indices[k, i, j, :]
+                        image.gradients[k, int(max_index_x), int(max_index_y)] += output.gradients[k, i, j]
+        output.children.add(image)
+        output._backward = _backward
+        return output
+                
