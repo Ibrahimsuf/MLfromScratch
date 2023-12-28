@@ -14,44 +14,55 @@ class ConvolutionalLayer():
     
     def __call__(self, image):
         padded_image = self.add_padding(image)
-        # Add new axis to the front of the image to represent the out channels
-        padded_image = padded_image[np.newaxis, :, :, :].view(Tensor)
-        output = np.zeros((self.out_channels, int(padded_image.shape[2]/self.stride), int(padded_image.shape[3]/self.stride))).view(Tensor)
-        # print(f"Output Shape: {output.shape}")
-        # print(f"End of range: {padded_image.shape[1] - self.size}")
+        # # Add new axis to the front of the image to represent the out channels
+        # padded_image = padded_image[np.newaxis, :, :, :].view(Tensor)
+        # output = np.zeros((self.out_channels, int(padded_image.shape[2]/self.stride), int(padded_image.shape[3]/self.stride))).view(Tensor)
+        # # print(f"Output Shape: {output.shape}")
+        # # print(f"End of range: {padded_image.shape[1] - self.size}")
 
-        for i in range(0, padded_image.shape[2] - self.size, self.stride):
-            for j in range(0, padded_image.shape[3] - self.size, self.stride):
-                # print(f"i: {i}, j: {j}")
-                # print(f"i+size: {i+self.size}, j+size: {j+self.size}")
-                image_section = padded_image[:, :, i:i+self.size, j:j+self.size]
+        # for i in range(0, padded_image.shape[2] - self.size, self.stride):
+        #     for j in range(0, padded_image.shape[3] - self.size, self.stride):
+        #         # print(f"i: {i}, j: {j}")
+        #         # print(f"i+size: {i+self.size}, j+size: {j+self.size}")
+        #         image_section = padded_image[:, :, i:i+self.size, j:j+self.size]
 
-                # print(f"Image Section: {image_section}")
-                output[:, int(i/self.stride), int(j/self.stride)] = self.convolve_subsection(image_section)
+        #         # print(f"Image Section: {image_section}")
+        #         output[:, int(i/self.stride), int(j/self.stride)] = self.convolve_subsection(image_section)
+        # return output
+
+        filters_flattened = self.filters.reshape(self.out_channels, self.in_channels * self.size * self.size)
+        patches = self.img2col(padded_image)
+        output = filters_flattened @ patches + self.bias
+        print(f"Output shape: {output.shape}")
+        output = output.reshape(self.out_channels, int(padded_image.shape[1] - self.size/self.stride) + 1, int(padded_image.shape[2] - self.size/self.stride) + 1).view(Tensor)
+
+        output.children.add(self.filters)
+        output.children.add(image)
+
         return output
+        def _backward():
+            patches.gradients += output.gradients @ filters_flattened.T
+            filters_flattened.gradients += patches.T @ output.gradients
+            self.bias.gradients += output.gradients.sum(axis=0)
+
+            filter_gradients = filters_flattened.gradients.reshape(self.filters.shape)
+            image.gradients 
 
 
 
-    def convolve_subsection(self, subsection):
-        assert subsection.shape == (self.in_channels, self.size, self.size), f"Subsection shape must match filter shape {subsection.shape} != {(self.in_channels, self.size, self.size)}"
+    def img2col(self, image):
+        patch_size = self.in_channels * self.size * self.size
+        num_locations_x = int((image.shape[1] - self.size)/self.stride + 1)
+        num_patches = num_locations_x * num_locations_x
+        patches = np.zeros((patch_size, num_patches))
+        patch_number = 0
+        for i in range(0, image.shape[1] - self.size + 1, self.stride):
+            for j in range(0, image.shape[2] - self.size + 1, self.stride):
+                patches[:, patch_number] = image[:, i:i + self.size, j:j + self.size].reshape(-1)
+                patch_number += 1
 
-        #self.filters.shape = (out_channels, in_channels, size, size)
-        # For each out channel we want to take the element wise product of the filter and the image (this includes going across multiple channels)
-        #then we want to sum accross the all the columns but the channel column
-        # product = self.filters * subsection
-        # sum = (product).sum(axis=(1,2, 3))
-        # out = (product).sum(axis=(1,2, 3)) + self.bias
-
-        # print(f"Product: {product}")
-        # print(f"Product Shape: {product.shape}")
-
-        # print(f"Sum: {sum}")
-        # print(f"Sum Shape: {sum.shape}")
-        # print(f"OUT: {out}")
-        # print(f"OUT SHAPE: {out.shape}")
-        
-        return (self.filters * subsection).sum(axis=(1,2,3), keepdims = False) + self.bias
-        
+        return patches.view(Tensor)
+    
     def add_padding(self, image):
         if self.padding == 0:
             return image
@@ -91,8 +102,8 @@ class MaxPooling():
     def __call__(self, image):
         output = np.zeros((image.shape[0], int(image.shape[1]/self.stride), int(image.shape[2]/self.stride)))
         self.max_indices = np.zeros((image.shape[0], int(image.shape[1]/self.stride), int(image.shape[2]/self.stride), 2))
-        for i in range(0, image.shape[1], self.stride):
-            for j in range(0, image.shape[2], self.stride):
+        for i in range(0, image.shape[1] - self.size + 1, self.stride):
+            for j in range(0, image.shape[2] - self.size + 1, self.stride):
                 image_section = image[:, i:i+self.size, j:j+self.size]
 
                 max_idx = image_section.reshape(image_section.shape[0],-1).argmax(1)
@@ -107,8 +118,8 @@ class MaxPooling():
         output = output.view(Tensor)
 
         def _backward():
-            print(f"Output gradients: {output.gradients.shape}")
-            print(f"Max indices: {self.max_indices.shape}")
+            # print(f"Output gradients: {output.gradients.shape}")
+            # print(f"Max indices: {self.max_indices.shape}")
             for i in range(0, self.max_indices.shape[1]):
                 for j in range(0, self.max_indices.shape[2]):
                     for k in range(0, self.max_indices.shape[0]):

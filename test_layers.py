@@ -25,9 +25,9 @@ class TestLayers(unittest.TestCase):
 
         self.assertEqual(padded_image.shape, (1, 30, 30))
 
-    def test_convolve_subsection(self):
-        subsection = np.array([[[1, 2, 3], [0, 0, 0], [0, 0, 0]]]).reshape((1, 1, 3, 3)).view(Tensor)
-        layer = ConvolutionalLayer(1, 2, 3, 1, 1)
+    def test_convolve(self):
+        image = np.array([[[1, 2, 3], [0, 0, 0], [0, 0, 0]]]).reshape((1, 3, 3)).view(Tensor)
+        layer = ConvolutionalLayer(1, 2, 3, 1, 0)
 
         # Horizontal edge detector (Sobel filter)
         horizontal_edge_detector = np.array([[-1, -2, -1],
@@ -43,12 +43,12 @@ class TestLayers(unittest.TestCase):
         layer.filters = layer.filters[:, np.newaxis, :, :].view(Tensor)
         layer.bias = np.zeros_like(layer.bias).view(Tensor)
         
-        output = layer.convolve_subsection(subsection)
-        expected_output = np.array([-8, 2]).view(Tensor)
+        output = layer(image)
+        expected_output = np.array([-8, 2]).reshape(2, 1, 1).view(Tensor)
 
 
-        # print(f"Output: {output}")
-        # print(f"Expected Output: {expected_output}")
+        print(f"Output: {output}")
+        print(f"Expected Output: {expected_output}")
 
         self.assertTrue(np.array_equal(output, expected_output))
         
@@ -92,6 +92,14 @@ class TestLayers(unittest.TestCase):
 
         self.assertTrue(np.array_equal(image.gradients, expected_gradient))
 
+    def test_img2col(self):
+        image = np.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]).reshape(1, 3, 3).view(Tensor)
+        layer = ConvolutionalLayer(1, 1, 2, 1, 0)
+
+        output = layer.img2col(image)
+
+        expected_output = np.array([[1, 2, 4, 5], [2, 3, 5, 6], [4, 5, 7, 8], [5, 6, 8, 9]]).T.view(Tensor)
+        self.assertTrue(np.array_equal(output, expected_output))
 if __name__ == '__main__':
     unittest.main()
         
